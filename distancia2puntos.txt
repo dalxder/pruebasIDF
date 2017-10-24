@@ -1,0 +1,26 @@
+#Creacion de 
+def distancia2puntos(point1, point2):
+	distance = QgsDistanceArea()
+	crs = QgsCoordinateReferenceSystem()
+	crs.createFromSrsId(4326) # EPSG:4326
+	distance.setSourceCrs(crs)
+	distance.setEllipsoidalMode(True)
+	distance.setEllipsoid('WGS84')
+	m = distance.measureLine(point1, point2) # ~322.48m.
+
+def crearJson():
+	str_coef="""{
+		"tr1":{"d10":200,"D15":100},
+		"tr1":{"d10":200,"D15":100}
+		}"""
+	template="""{
+ 	 "type": "Feature",
+ 	 "geometry": {
+	    "type": "Point",
+	    "coordinates": [125.6, 10.1]
+	  },
+ 	 "properties": {
+ 	   "name": "%s",
+	"coeficientes":%s
+ 	 }
+	}"""%(nombEstacion,str_coef)
