@@ -1,24 +1,29 @@
 import urllib2
 import pyPdf
 import json
-"""
-from pprint import pprint
 
-with open('data.json') as data_file:
-    data = json.load(data_file)
-pprint(data)
-"""
 def main():
-    nombrePdf="IDF_16035010_TIBU.pdf"
-    listaPdf=[nombrePdf,"IDF_11135010_SAUTATA.pdf"]
+    with open("A Listado estaciones con IDF_actualizado a 23 mar 2017.csv") as dataEsta:
+        estaciones=dataEsta.readlines()
     data=[]
-    for i, estacionPdf in enumerate(listaPdf):
-        download_file("http://www.ideam.gov.co/documents/10182/24541172/%s"%estacionPdf,estacionPdf)
-        data.append([estacionPdf,textoPdfCoef(estacionPdf)])
+    nodata=[]
+    for i, estacionPdf in enumerate(estaciones):
+        if i>0:
+            datos=estacionPdf.split(",")
+            coordenadas=datos[1:3]
+            nombrePdf="IDF_"+datos[3]+"_"+datos[4].replace(" ","_")+".pdf"
+            print(nombrePdf)
+            try:
+                download_file("http://www.ideam.gov.co/documents/10182/24541172/%s"%nombrePdf,nombrePdf)
+                data.append([nombrePdf,textoPdfCoef(nombrePdf),coordenadas])
+            except:
+                nodata.append(nombrePdf)
+
         #print "procesado %i"%((i+1)/len(listaPdf)*100)
         #print data
     a=crearJson(data)
-    print(a)
+    #update()
+    print(nodata)
     #geom = QgsGeometry.fromPolygon([[QgsPoint(pt[0],pt[1])  for pt in geojson['coordinates'][0] [0]]])
 
 
@@ -77,28 +82,46 @@ def crearJson(datas):
     json=""
 
     tr=[2,3,5,10,25,50,100]
+    coorX=4
+    coorY=-74
+    # itera para cada estacion
+    feature=""
     for i in range(len(datas)):
         str_coef=""
         data=datas[i][1]
         nombEstacion=datas[i][0]
+        #print(data[j][2][1],data[j][2][0])
+        # itera para cada periodo de retorno
         for j,t in enumerate(tr):
             str_coef+='"tr%s":[%s,%s,%s]'%(t,data[j][0],data[j][1],data[j][2])
             if j<len(tr)-1:
                 str_coef+=','
-
-        template="""{
-     "type": "Feature",
-     "geometry": {
+        feature+="""{
+        "type": "Feature",
+        "geometry": {
         "type": "Point",
-        "coordinates": [125.6, 10.1]
-      },
-     "properties": {
-       "name": "%s",
-       "id":["C1","X0","C2"],
-       "coeficientes":{%s}
-     }
-}\n"""%(nombEstacion,str_coef)
-        json+=template
-    return json
+        "coordinates": [%s, %s]
+        },
+        "properties": {
+        "name": "%s",
+        "id":["C1","X0","C2"],
+        "coeficientes":{%s}
+        }
+        }\n"""%(datas[i][2][1],datas[i][2][0],nombEstacion,str_coef)
+        if i<len(datas)-1:
+            feature+=','
+
+
+
+
+    featureCollection="""   {
+    "type": "FeatureCollection",
+    "features": [%s]}"""%(feature)
+    with open("estaciones.geojson", 'wb') as createGeojson:
+        createGeojson.write(featureCollection)
+
+    return featureCollection
+
+
 if __name__ == "__main__":
     main()
